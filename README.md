@@ -225,15 +225,7 @@ MAX_LENGTH = 256
 
 Complaints longer than 256 tokens are truncated. Shorter complaints are padded dynamically within each batch.
 
-The dataset contains relatively long narratives:
-
-| Statistic | Words per complaint |
-|---|---:|
-| Mean | 173 |
-| Median | 111 |
-| Percentile 75 | 196 |
-| Percentile 90 | 355 |
-| Percentile 95 | 515 |
+The dataset contains relatively long complaint: approximately 225 tokens per compaint
 
 A length of 256 tokens provides a compromise between retaining context and maintaining feasible GPU memory and training time.
 
