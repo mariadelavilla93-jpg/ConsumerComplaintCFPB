@@ -431,6 +431,6 @@ Los resultados muestran que es posible combinar un nivel elevado de automatizaci
 No obstante, las diferencias entre categorías y las limitaciones computacionales indican que todavía existe margen de mejora antes de una posible industrialización.
 
 
-## Conclusión
+## 
 
 Adicionalmente, el notebook contiene comentarios sobre el planteamiento y conclusiones en los que se explican más extensamente los resultados y metodología aplicada
