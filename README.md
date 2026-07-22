@@ -652,3 +652,349 @@ The main remaining challenges are:
 - Production monitoring.
 
 Within the scope of the prototype, SEC-BERT offers the best balance between contextual understanding, reproducibility, inference control and operational applicability.
+
+# Alternative 3: LLM-based classification
+
+As a third alternative, a general-purpose Large Language Model could be used to classify each complaint into one of the nine product categories.
+Unlike the regex baseline and the SEC-BERT model, this approach would not require training and maintaining a dedicated classification model. Each complaint would be sent to the LLM together with a fixed prompt containing:
+
+- A description of the classification task.
+- The allowed product categories.
+- Basic classification rules.
+- The required JSON output format.
+- A one-shot example.
+
+A **one-shot example** consists of including one complete example of an input complaint and its expected classification inside the prompt. This helps the model understand both the task and the exact response format.
+The model would receive the complaint identifier and narrative, and would return only the same identifier and one of the allowed categories.
+
+Calls would be made with:
+
+```python
+temperature = 0
+```
+
+This configuration reduces output variability and encourages the same complaint to receive the same classification across repeated executions. However, absolute determinism cannot be assumed and should be tested empirically.
+
+---
+
+## Allowed categories
+
+The nine allowed product categories are:
+
+1. `Mortgage`
+2. `Credit reporting`
+3. `Debt collection or management`
+4. `Checking or savings account`
+5. `Credit or prepaid card`
+6. `Payday, title, personal or advance loan`
+7. `Vehicle loan or lease`
+8. `Money transfer, virtual currency, or money service`
+9. `Student loan`
+
+---
+
+## Proposed system prompt
+
+```text
+You are a financial complaint classification system.
+
+Your task is to classify each consumer complaint into exactly one of the allowed product categories.
+
+You will receive:
+- A complaint ID.
+- The text of a consumer complaint.
+
+You must analyze the main issue described in the complaint and select the single category that best represents the financial product involved.
+
+Allowed categories:
+
+1. Mortgage
+2. Credit reporting
+3. Debt collection or management
+4. Checking or savings account
+5. Credit or prepaid card
+6. Payday, title, personal or advance loan
+7. Vehicle loan or lease
+8. Money transfer, virtual currency, or money service
+9. Student loan
+
+Classification guidelines:
+
+- Select only one category.
+- Use the main subject of the complaint, even when other financial products are also mentioned.
+- For complaints about incorrect, negative, fraudulent or outdated information appearing on a credit report, select "Credit reporting".
+- For complaints mainly concerning collection attempts, debt collectors, debt settlement, debt relief or debt management services, select "Debt collection or management".
+- Do not create new categories.
+- Do not return explanations, reasoning, confidence scores, markdown or additional text.
+- Preserve the complaint ID exactly as provided.
+- Return only one valid JSON object using this exact structure:
+
+{
+  "complaint_id": "<complaint ID>",
+  "category": "<one allowed category>"
+}
+
+One-shot example:
+
+Input:
+{
+  "complaint_id": "7051632",
+  "complaint": "The loan was refinanced with another company XX/XX/2022. Still appear negative on credit report."
+}
+
+Output:
+{
+  "complaint_id": "7051632",
+  "category": "Credit reporting"
+}
+
+Now classify the complaint provided by the user following exactly the same rules and output format.
+```
+
+---
+
+## Input format
+
+Each request would include the complaint identifier and its narrative:
+
+```json
+{
+  "complaint_id": "7051632",
+  "complaint": "The loan was refinanced with another company XX/XX/2022. Still appear negative on credit report."
+}
+```
+
+---
+
+## Output format
+
+The expected response would contain only a valid JSON object:
+
+```json
+{
+  "complaint_id": "7051632",
+  "category": "Credit reporting"
+}
+```
+
+The prompt explicitly restricts the output to:
+
+- One category.
+- One of the nine permitted values.
+- A valid JSON object.
+- The exact fields `complaint_id` and `category`.
+- No explanations, reasoning or additional text.
+
+In a real implementation, these restrictions should also be enforced using structured output or a JSON Schema whenever supported by the selected API.
+
+---
+
+## Token consumption estimate
+
+The estimated token consumption is based on the following averages:
+
+| Component | Average tokens per complaint |
+|---|---:|
+| Complaint narrative | 225.04 |
+| System prompt and one-shot example | 365.00 |
+| **Total input tokens** | **590.04** |
+| JSON output | **16.33** |
+
+The expected processing volume is:
+
+- Approximately **500,000 complaints per year**.
+- Approximately **42,000 complaints per month**.
+
+### Monthly input tokens
+
+Each request would contain approximately:
+
+```text
+225.04 + 365 = 590.04 input tokens
+```
+
+For 42,000 complaints:
+
+```text
+590.04 × 42,000 = 24,781,680 input tokens
+```
+
+The estimated monthly input volume is therefore:
+
+**24.78 million input tokens.**
+
+### Monthly output tokens
+
+Each response would contain approximately:
+
+```text
+16.33 output tokens
+```
+
+For 42,000 complaints:
+
+```text
+16.33 × 42,000 = 685,860 output tokens
+```
+
+The estimated monthly output volume is therefore:
+
+**0.686 million output tokens.**
+
+---
+
+## Models considered
+
+Two Flash models were considered because of their balance between cost, latency and classification capability.
+
+| Model | Input price per 1M tokens | Output price per 1M tokens | Estimated latency |
+|---|---:|---:|---:|
+| Gemini 3 Flash | $0.50 | $3.00 | 1.19 s |
+| Gemini 2.5 Flash | $0.30 | $2.50 | 0.50 s |
+
+Latency values are indicative and may vary depending on region, concurrency, provider limits and infrastructure conditions.
+
+The models would be used without additional reasoning capabilities because this is a closed classification task. This keeps both latency and token consumption lower.
+
+---
+
+## Estimated monthly cost
+
+### Gemini 3 Flash
+
+Input cost:
+
+```text
+24.78168 million × $0.50 = $12.39084
+```
+
+Output cost:
+
+```text
+0.68586 million × $3.00 = $2.05758
+```
+
+Total monthly cost:
+
+```text
+$12.39084 + $2.05758 = $14.44842
+```
+
+Estimated cost:
+
+- **$14.45 per month**
+- **$0.00034 per complaint**
+
+### Gemini 2.5 Flash
+
+Input cost:
+
+```text
+24.78168 million × $0.30 = $7.43450
+```
+
+Output cost:
+
+```text
+0.68586 million × $2.50 = $1.71465
+```
+
+Total monthly cost:
+
+```text
+$7.43450 + $1.71465 = $9.14915
+```
+
+Estimated cost:
+
+- **$9.15 per month**
+- **$0.00022 per complaint**
+
+---
+
+## Cost comparison
+
+| Model | Monthly input cost | Monthly output cost | Total monthly cost | Cost per complaint |
+|---|---:|---:|---:|---:|
+| Gemini 3 Flash | $12.39 | $2.06 | **$14.45** | $0.00034 |
+| Gemini 2.5 Flash | $7.43 | $1.71 | **$9.15** | $0.00022 |
+
+Under these assumptions, Gemini 2.5 Flash would cost approximately:
+
+- **$5.30 less per month**
+- Around **37% less** than Gemini 3 Flash
+
+---
+
+## Operational considerations
+
+The cost estimate assumes:
+
+- Approximately 42,000 complaints per month.
+- One independent request per complaint.
+- The complete system prompt is included in each request.
+- The model returns only the expected JSON.
+- `temperature = 0` is used.
+- No additional reasoning mode is enabled.
+- No retries are required.
+- No invalid responses are produced.
+- Prompt caching or batch discounts are not considered.
+- Prices remain unchanged.
+
+The estimate includes only model inference. It does not include:
+
+- Integration development.
+- Storage.
+- Monitoring.
+- Data transfer.
+- Logging.
+- Retry mechanisms.
+- Manual review.
+- Additional infrastructure.
+
+Before storing a response, the system should validate that:
+
+1. The output is valid JSON.
+2. The returned `complaint_id` matches the submitted identifier.
+3. The category belongs to the nine allowed values.
+4. No unexpected fields or additional text are returned.
+
+Invalid responses could be sent to a controlled retry mechanism. If the second attempt also failed, the complaint could be routed to manual review.
+
+---
+
+## Recommended evaluation
+
+Before adopting the LLM-based solution, both models should be tested on the same test set used for the regex and SEC-BERT approaches.
+
+The comparison should include:
+
+- Accuracy.
+- Macro F1.
+- Precision and recall by category.
+- Performance on minority categories.
+- Percentage of valid JSON responses.
+- Percentage of categories outside the allowed catalogue.
+- Prediction consistency across repeated runs.
+- Average latency and latency percentiles.
+- Actual token consumption.
+- Actual cost per complaint.
+
+This would allow the three approaches to be compared under equivalent conditions:
+
+1. Regex top-k baseline.
+2. SEC-BERT fine-tuning.
+3. LLM-based classification.
+
+## Conclusion
+
+The LLM approach is flexible because it does not require training a dedicated model and allows categories or classification rules to be changed directly in the prompt.
+
+Under the assumptions used:
+
+- **Gemini 2.5 Flash** would have an estimated monthly inference cost of **$9.15**, with an indicative latency of approximately **0.50 seconds**.
+- **Gemini 3 Flash** would have an estimated monthly inference cost of **$14.45**, with an indicative latency of approximately **1.19 seconds**.
+
+The final decision should not be based only on price or latency. Both models would need to be evaluated on the same test set to determine whether their quality is comparable to or better than SEC-BERT.
+
+If the Flash models did not achieve sufficient performance, especially for ambiguous complaints or minority categories, more capable models could be evaluated. Any improvement would need to be weighed against the expected increase in inference cost and response time.
