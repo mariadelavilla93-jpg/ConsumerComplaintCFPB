@@ -70,9 +70,7 @@ data/complaints.csv
 El notebook utiliza la siguiente ruta:
 
 ```python
-DATA_PATH = "data/complaints.csv"
-
-df = pd.read_csv(DATA_PATH)
+df = pd.read_csv("data/complaints.csv")
 ```
 
 El CSV no debe subirse al repositorio.
