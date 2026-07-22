@@ -599,10 +599,10 @@ DATA_PATH = "data/complaints.csv"
 
 ### 17.4 Install dependencies
 
-The main dependencies are:
+Install libraries specified on the requirements.txt:
 
 ```bash
-pip install pandas numpy scikit-learn matplotlib seaborn torch transformers datasets accelerate
+pip install -r requirements.txt
 ```
 
 ### 17.5 Run the notebook
