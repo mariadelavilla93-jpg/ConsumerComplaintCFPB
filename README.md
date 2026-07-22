@@ -638,7 +638,7 @@ The final model achieves:
 - **74.95% macro F1**.
 - **91.91% accuracy** over accepted predictions after applying a confidence threshold.
 -  **92.25% weighted F1** over accepted predictions after applying a confidence threshold.
--  **83.56% weighted F1** over accepted predictions after applying a confidence threshold.
+-  **83.56% macro F1** over accepted predictions after applying a confidence threshold.
 - **86.55% automatic coverage**.
 
 The results show that a transformer pretrained on financial text can classify most complaints reliably while identifying a smaller set of uncertain cases for additional review.
