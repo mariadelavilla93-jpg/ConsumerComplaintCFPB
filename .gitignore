@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project data
+data/
+*.csv
+
+# Fine-tuned model checkpoints
+sec_bert_product_classifier/
+
+# Jupyter
+.ipynb_checkpoints/
