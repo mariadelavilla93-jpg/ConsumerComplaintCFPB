@@ -429,3 +429,8 @@ La incorporación de un threshold de confianza de 0,70 permite clasificar autom�
 Los resultados muestran que es posible combinar un nivel elevado de automatización con un mecanismo de abstención para las predicciones menos fiables.
 
 No obstante, las diferencias entre categorías y las limitaciones computacionales indican que todavía existe margen de mejora antes de una posible industrialización.
+
+
+## Conclusión
+
+Adicionalmente, el notebook contiene comentarios sobre el planteamiento y conclusiones en los que se explican más extensamente los resultados y metodología aplicada
