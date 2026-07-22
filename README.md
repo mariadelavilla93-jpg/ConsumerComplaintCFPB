@@ -133,7 +133,7 @@ A prompt-based classifier could receive:
 - The complaint narrative.
 - The nine allowed product categories.
 - A short definition of each category.
-- One or more labelled examples.
+- One or more labelled examples (One-shot).
 - A required structured output.
 
 This alternative would provide flexibility when categories change and could potentially be used as a second-stage classifier for uncertain complaints.
